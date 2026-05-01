@@ -5,6 +5,7 @@ import com.gameplatform.db.LibraryDAO;
 import com.gameplatform.model.Game;
 import com.gameplatform.ui.theme.GameForgeTheme;
 import com.gameplatform.ui.MainFrame;
+import com.gameplatform.ui.util.DarkScrollBarUI;
 
 import javax.swing.*;
 import java.awt.*;
@@ -60,6 +61,9 @@ public class LibraryPanel extends JPanel {
         scroll.setBorder(null);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
         scroll.getViewport().setBackground(GameForgeTheme.BG_DARK);
+        scroll.getVerticalScrollBar().setUI(new DarkScrollBarUI());
+        scroll.getHorizontalScrollBar().setUI(new DarkScrollBarUI());
+        scroll.setBackground(GameForgeTheme.BG_DARK);
         return scroll;
     }
 

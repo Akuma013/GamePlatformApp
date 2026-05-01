@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Reads and writes the Wishlist table for the currently logged-in customer.
@@ -15,6 +16,7 @@ import java.util.List;
 public class WishlistDAO {
 
     public static List<Game> listForUser(String username) throws SQLException {
+        Map<Integer, List<String>> genresByGame = GenreDAO.loadGenresByGameId();
         String sql =
                 "SELECT g.gameID, g.gameName, g.gamePrice, g.version, g.gameSize, " +
                         "       g.imagePath, p.publisherName, " +
@@ -40,7 +42,8 @@ public class WishlistDAO {
                             rs.getInt("gameSize"),
                             rs.getString("publisherName"),
                             rs.getDouble("avgRating"),
-                            rs.getString("imagePath")
+                            rs.getString("imagePath"),
+                            genresByGame.getOrDefault(rs.getInt("gameID"), List.of())
                     ));
                 }
             }

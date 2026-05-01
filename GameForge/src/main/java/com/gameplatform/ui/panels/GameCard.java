@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 public class GameCard extends JPanel {
 
     private static final int CARD_W = 230;
-    private static final int CARD_H = 200;
+    private static final int CARD_H = 230;
     private static final int IMG_W  = 230;
     private static final int IMG_H  = 107;     // ≈ Steam capsule aspect
 
@@ -71,6 +71,9 @@ public class GameCard extends JPanel {
         text.add(name);
         text.add(Box.createVerticalStrut(2));
         text.add(metaRow);
+        text.add(Box.createVerticalStrut(6));
+        text.add(buildPrimaryGenreChip(game));
+        text.add(Box.createVerticalStrut(6));
         text.add(price);
         add(text, BorderLayout.CENTER);
 
@@ -86,5 +89,22 @@ public class GameCard extends JPanel {
                 if (onClick != null) onClick.accept(game.getGameID());
             }
         });
+    }
+
+    private JComponent buildPrimaryGenreChip(com.gameplatform.model.Game game) {
+        JPanel wrap = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        wrap.setOpaque(false);
+        wrap.setAlignmentX(LEFT_ALIGNMENT);
+
+        if (game.getGenres().isEmpty()) {
+            // Render an invisible spacer so the layout doesn't shift
+            // between cards with and without genres.
+            JLabel spacer = new JLabel(" ");
+            spacer.setFont(GameForgeTheme.SMALL);
+            wrap.add(spacer);
+        } else {
+            wrap.add(new com.gameplatform.ui.util.Chip(game.getGenres().get(0)));
+        }
+        return wrap;
     }
 }

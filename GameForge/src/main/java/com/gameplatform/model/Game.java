@@ -1,4 +1,5 @@
 package com.gameplatform.model;
+import java.util.List;
 
 public class Game {
     private final int gameID;
@@ -9,8 +10,11 @@ public class Game {
     private final String publisher;
     private final double avgRating;
     private final String imagePath;
+    private final List<String> genres;
 
-    public Game(int gameID, String gameName, double price, String version, int gameSize, String publisher, double avgRating, String imagePath) {
+    public Game(int gameID, String gameName, double price, String version,
+                int gameSize, String publisher, double avgRating,
+                String imagePath, List<String> genres) {       // ← new param
         this.gameID = gameID;
         this.gameName = gameName;
         this.price = price;
@@ -19,6 +23,7 @@ public class Game {
         this.publisher = publisher;
         this.avgRating = avgRating;
         this.imagePath = imagePath;
+        this.genres = genres == null ? List.of() : genres;
     }
 
     public int getGameID()       { return gameID; }
@@ -29,6 +34,7 @@ public class Game {
     public String getPublisher() { return publisher; }
     public double getAvgRating() { return avgRating; }
     public String getImagePath() { return imagePath; }
+    public List<String> getGenres() { return genres; }
     @Override
     public String toString() {
         return String.format("Game[%d, %s, $%.2f, ★%.2f]",

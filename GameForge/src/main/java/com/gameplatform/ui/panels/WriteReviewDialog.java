@@ -3,6 +3,7 @@ package com.gameplatform.ui.panels;
 import com.gameplatform.db.DBConnection;
 import com.gameplatform.db.ReviewDAO;
 import com.gameplatform.ui.theme.GameForgeTheme;
+import com.gameplatform.ui.util.DarkScrollBarUI;
 
 import javax.swing.*;
 import java.awt.*;
@@ -54,8 +55,10 @@ public class WriteReviewDialog extends JDialog {
         JScrollPane scroll = new JScrollPane(descriptionArea);
         scroll.setAlignmentX(LEFT_ALIGNMENT);
         scroll.setBorder(null);
+        scroll.getVerticalScrollBar().setUI(new DarkScrollBarUI());
         form.add(scroll);
         root.add(form, BorderLayout.CENTER);
+
 
         // ---- buttons ----
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));

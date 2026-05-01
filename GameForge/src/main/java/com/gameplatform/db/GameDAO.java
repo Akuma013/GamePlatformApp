@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class GameDAO {
 
@@ -18,29 +19,34 @@ public class GameDAO {
      * LEFT JOIN ensures unrated games are still returned (with avgRating = 0).
      */
     public static List<Game> loadAllGamesWithRatings() throws SQLException {
+        Map<Integer, List<String>> genresByGame = GenreDAO.loadGenresByGameId();
+
         String sql =
                 "SELECT g.gameID, g.gameName, g.gamePrice, g.version, g.gameSize, " +
-                        "       g.imagePath, " +                                          // ← add
+                        "       g.imagePath, " +
                         "       p.publisherName, " +
                         "       COALESCE(AVG(CAST(r.rating AS FLOAT)), 0) AS avgRating " +
                         "FROM Game g " +
                         "LEFT JOIN Publisher p ON p.publisherID = g.publisherID " +
                         "LEFT JOIN Review r ON r.gameID = g.gameID " +
                         "GROUP BY g.gameID, g.gameName, g.gamePrice, g.version, " +
-                        "         g.gameSize, g.imagePath, p.publisherName";              // ← add
+                        "         g.gameSize, g.imagePath, p.publisherName";
+
         List<Game> games = new ArrayList<>();
         try (Statement st = DBConnection.get().createStatement();
              ResultSet rs = st.executeQuery(sql)) {
             while (rs.next()) {
+                int id = rs.getInt("gameID");
                 games.add(new Game(
-                        rs.getInt("gameID"),
+                        id,
                         rs.getString("gameName"),
                         rs.getDouble("gamePrice"),
                         rs.getString("version"),
                         rs.getInt("gameSize"),
                         rs.getString("publisherName"),
                         rs.getDouble("avgRating"),
-                        rs.getString("imagePath")             // ← add
+                        rs.getString("imagePath"),
+                        genresByGame.getOrDefault(id, List.of())   // ← new
                 ));
             }
         }
@@ -60,9 +66,10 @@ public class GameDAO {
                         "FROM Game g " +
                         "LEFT JOIN Publisher p ON p.publisherID = g.publisherID " +
                         "LEFT JOIN Review r ON r.gameID = g.gameID " +
-                        "WHERE g.gameID = ? " +                                       // ← add this
+                        "WHERE g.gameID = ? " +
                         "GROUP BY g.gameID, g.gameName, g.gamePrice, g.version, " +
                         "         g.gameSize, g.imagePath, p.publisherName";
+
         try (PreparedStatement ps = DBConnection.get().prepareStatement(sql)) {
             ps.setInt(1, gameID);
             try (ResultSet rs = ps.executeQuery()) {
@@ -75,7 +82,8 @@ public class GameDAO {
                             rs.getInt("gameSize"),
                             rs.getString("publisherName"),
                             rs.getDouble("avgRating"),
-                            rs.getString("imagePath")
+                            rs.getString("imagePath"),
+                            GenreDAO.listForGame(gameID)             // ← new
                     );
                 }
             }
