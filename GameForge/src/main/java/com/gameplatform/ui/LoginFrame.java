@@ -1,5 +1,6 @@
 package com.gameplatform.ui;
 
+import com.gameplatform.search.UserSearchService;
 import com.gameplatform.ui.theme.GameForgeTheme;
 import com.gameplatform.db.DBConnection;
 import com.gameplatform.search.SearchService;
@@ -83,17 +84,20 @@ public class LoginFrame extends JFrame {
         // Run DB work off the EDT so the UI doesn't freeze
         SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
             SearchService search;
+            UserSearchService userSearch;
             String errorMessage;
 
             @Override
             protected Boolean doInBackground() {
-                if (!DBConnection.loginCustomer(username, password)) {  // ← NEW
+                if (!DBConnection.loginCustomer(username, password)) {
                     errorMessage = "Invalid username or password.";
                     return false;
                 }
                 try {
                     search = new SearchService();
                     search.buildIndex();
+                    userSearch = new UserSearchService();
+                    userSearch.buildIndex();
                     return true;
                 } catch (Exception ex) {
                     errorMessage = "Could not load game index: " + ex.getMessage();
@@ -107,8 +111,7 @@ public class LoginFrame extends JFrame {
                 signInButton.setEnabled(true);
                 try {
                     if (get()) {
-                        // Success: open MainFrame and close the login window
-                        new MainFrame(search).setVisible(true);
+                        new MainFrame(search, userSearch).setVisible(true);
                         dispose();
                     } else {
                         showError(errorMessage);

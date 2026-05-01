@@ -3,6 +3,8 @@ package com.gameplatform.ui;
 
 import com.gameplatform.db.DBConnection;
 import com.gameplatform.search.SearchService;
+import com.gameplatform.search.UserSearchService;
+import com.gameplatform.ui.panels.FriendsDialog;
 import com.gameplatform.ui.panels.LibraryPanel;
 import com.gameplatform.ui.panels.StorePanel;
 import com.gameplatform.ui.panels.WishlistPanel;
@@ -14,8 +16,9 @@ import java.awt.*;
 
 public class MainFrame extends JFrame {
     private JLabel balanceLabel = new JLabel();      // ← add field at top of class
-
-    public MainFrame(SearchService search) {
+    private final UserSearchService userSearch;
+    public MainFrame(SearchService search, UserSearchService userSearch) {
+        this.userSearch = userSearch;
         setTitle("GameForge — " + DBConnection.getAppUsername());
         setSize(1200, 760);
         setLocationRelativeTo(null);
@@ -79,10 +82,21 @@ public class MainFrame extends JFrame {
         signOut.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         signOut.addActionListener(e -> handleSignOut());
 
+        JButton friendsBtn = new JButton("Friends");
+        friendsBtn.setBackground(GameForgeTheme.BG_CARD);
+        friendsBtn.setForeground(GameForgeTheme.TEXT_BRIGHT);
+        friendsBtn.setFocusPainted(false);
+        friendsBtn.setOpaque(true);
+        friendsBtn.setContentAreaFilled(true);
+        friendsBtn.setBorderPainted(false);
+        friendsBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        friendsBtn.addActionListener(e -> openFriendsDialog());
+
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 0));
         right.setOpaque(false);
         right.add(user);
         right.add(balanceLabel);
+        right.add(friendsBtn);
         right.add(signOut);
 
         header.add(brand, BorderLayout.WEST);
@@ -106,5 +120,17 @@ public class MainFrame extends JFrame {
         DBConnection.disconnect();
         dispose();
         SwingUtilities.invokeLater(() -> new LoginFrame().setVisible(true));
+    }
+
+    public UserSearchService getUserSearch() {
+        return userSearch;
+    }
+
+    private void openFriendsDialog() {
+        new FriendsDialog(this, userSearch, () -> {
+            // Currently no header refresh needed when friend list changes,
+            // but the callback is wired up in case future versions show
+            // a "X friends" badge somewhere.
+        }).setVisible(true);
     }
 }

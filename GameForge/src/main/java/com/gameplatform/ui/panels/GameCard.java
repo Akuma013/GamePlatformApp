@@ -25,7 +25,8 @@ public class GameCard extends JPanel {
         setLayout(new BorderLayout());
         setBackground(GameForgeTheme.BG_CARD);
         setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
-        setPreferredSize(new Dimension(CARD_W, CARD_H));
+        setMinimumSize(new Dimension(CARD_W, CARD_H));
+        setMaximumSize(new Dimension(CARD_W, CARD_H));
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         // ---- image ----

@@ -34,6 +34,7 @@ public class SearchService {
     private final FuzzySearch fuzzy = new FuzzySearch(trie);
     private final Map<String, Integer> nameToId = new HashMap<>();
 
+
     /**
      * Load all games from the database and insert them into the Trie.
      * Call this once after the user logs in.

@@ -7,6 +7,7 @@ import com.gameplatform.search.SearchService;
 import com.gameplatform.ui.theme.GameForgeTheme;
 import com.gameplatform.ui.MainFrame;
 import com.gameplatform.ui.util.DarkScrollBarUI;
+import com.gameplatform.ui.util.WrapLayout;
 
 
 import javax.swing.*;
@@ -27,7 +28,7 @@ public class StorePanel extends JPanel {
     private final Map<String, Game> gamesByLowerName = new HashMap<>();
 
     private final JTextField searchField = new JTextField();
-    private final JPanel grid = new JPanel(new GridLayout(0, 4, 16, 16));
+    private final JPanel grid = new JPanel(new WrapLayout(FlowLayout.LEFT, 16, 16));
 
     private final JComboBox<String> genreCombo = new JComboBox<>();
     private static final String ALL_GENRES = "All genres";

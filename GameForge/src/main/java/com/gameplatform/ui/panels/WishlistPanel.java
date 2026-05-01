@@ -7,6 +7,7 @@ import com.gameplatform.model.Game;
 import com.gameplatform.ui.theme.GameForgeTheme;
 import com.gameplatform.ui.MainFrame;
 import com.gameplatform.ui.util.DarkScrollBarUI;
+import com.gameplatform.ui.util.WrapLayout;
 
 
 import javax.swing.*;
@@ -15,7 +16,7 @@ import java.util.List;
 
 public class WishlistPanel extends JPanel {
 
-    private final JPanel grid = new JPanel(new GridLayout(0, 4, 16, 16));
+    private final JPanel grid = new JPanel(new WrapLayout(FlowLayout.LEFT, 16, 16));
 
     public WishlistPanel() {
         setLayout(new BorderLayout());

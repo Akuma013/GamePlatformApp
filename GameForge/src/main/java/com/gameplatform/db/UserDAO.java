@@ -31,4 +31,25 @@ public class UserDAO {
         }
         return username;
     }
+    /* True if this username is a real customer in the [User] table. */
+    public static boolean exists(String username) throws SQLException {
+        String sql = "SELECT 1 FROM [User] WHERE username = ?";
+        try (PreparedStatement ps = DBConnection.get().prepareStatement(sql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+/* All distinct usernames, alphabetical. Used to populate the user search Trie. */
+    public static java.util.List<String> listAllUsernames() throws SQLException {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        String sql = "SELECT username FROM [User] ORDER BY username";
+        try (java.sql.Statement st = DBConnection.get().createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+            while (rs.next()) out.add(rs.getString(1));
+        }
+        return out;
+    }
 }
