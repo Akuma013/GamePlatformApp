@@ -22,6 +22,13 @@ public class GameCard extends JPanel {
     private static final int IMG_H  = 107;     // ≈ Steam capsule aspect
 
     public GameCard(Game game, Consumer<Integer> onClick) {
+        this(game, onClick, false, null);
+
+    }
+
+    public GameCard(Game game, Consumer<Integer> onClick,
+                    boolean showFavoriteStar,
+                    java.util.function.BiConsumer<Integer, Boolean> onFavoriteToggle) {
         setLayout(new BorderLayout());
         setBackground(GameForgeTheme.BG_CARD);
         setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
@@ -33,8 +40,19 @@ public class GameCard extends JPanel {
         ImageIcon icon = ImageLoader.load(game.getImagePath(), IMG_W, IMG_H);
         JLabel image = new JLabel(icon);
         image.setHorizontalAlignment(SwingConstants.CENTER);
-        image.setPreferredSize(new Dimension(IMG_W, IMG_H));
-        add(image, BorderLayout.NORTH);
+        image.setBounds(0, 0, IMG_W, IMG_H);
+
+        JLayeredPane imageLayer = new JLayeredPane();
+        imageLayer.setPreferredSize(new Dimension(IMG_W, IMG_H));
+        imageLayer.add(image, JLayeredPane.DEFAULT_LAYER);
+
+        if (showFavoriteStar) {
+            JLabel star = buildFavoriteStar(game, onFavoriteToggle);
+            star.setBounds(IMG_W - 32, 6, 28, 28);
+            imageLayer.add(star, JLayeredPane.PALETTE_LAYER);
+        }
+
+        add(imageLayer, BorderLayout.NORTH);
 
         // ---- text block ----
         JPanel text = new JPanel();
@@ -90,6 +108,41 @@ public class GameCard extends JPanel {
                 if (onClick != null) onClick.accept(game.getGameID());
             }
         });
+    }
+
+    private static JLabel buildFavoriteStar(Game game,
+                                            java.util.function.BiConsumer<Integer, Boolean> onToggle) {
+        JLabel star = new JLabel();
+        star.setHorizontalAlignment(SwingConstants.CENTER);
+        star.setVerticalAlignment(SwingConstants.CENTER);
+        star.setFont(new Font("Segoe UI Symbol", Font.BOLD, 22));
+        star.setOpaque(false);
+        star.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        star.setToolTipText("Toggle favorite");
+
+        paintStar(star, game.isFavorite());
+
+        star.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                boolean nowFav = !game.isFavorite();
+                game.setFavorite(nowFav);
+                paintStar(star, nowFav);
+                if (onToggle != null) onToggle.accept(game.getGameID(), nowFav);
+                e.consume();   // don't propagate to the card's open-detail click
+            }
+        });
+        return star;
+    }
+
+    private static void paintStar(JLabel star, boolean filled) {
+        if (filled) {
+            star.setText("★");
+            star.setForeground(new Color(0xffd24d));   // gold
+        } else {
+            star.setText("☆");
+            star.setForeground(new Color(0xc7d5e0));   // muted
+        }
     }
 
     private JComponent buildPrimaryGenreChip(com.gameplatform.model.Game game) {

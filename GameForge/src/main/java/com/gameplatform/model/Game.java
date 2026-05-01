@@ -2,6 +2,8 @@ package com.gameplatform.model;
 import java.util.List;
 
 public class Game {
+    private int playTime = 0;
+    private boolean favorite = false;
     private final int gameID;
     private final String gameName;
     private final double price;
@@ -40,4 +42,9 @@ public class Game {
         return String.format("Game[%d, %s, $%.2f, ★%.2f]",
                 gameID, gameName, price, avgRating);
     }
+    public int getPlayTime()           { return playTime; }
+    public void setPlayTime(int v)     { this.playTime = v; }
+
+    public boolean isFavorite()        { return favorite; }
+    public void setFavorite(boolean v) { this.favorite = v; }
 }

@@ -24,9 +24,11 @@ public class LibraryDAO {
      */
     public static List<Game> listForUser(String username) throws SQLException {
         Map<Integer, List<String>> genresByGame = GenreDAO.loadGenresByGameId();
+
         String sql =
                 "SELECT g.gameID, g.gameName, g.gamePrice, g.version, g.gameSize, " +
                         "       g.imagePath, p.publisherName, " +
+                        "       l.playTime, l.favorite, " +
                         "       COALESCE(AVG(CAST(r.rating AS FLOAT)), 0) AS avgRating " +
                         "FROM Library l " +
                         "JOIN Game g ON g.gameID = l.gameID " +
@@ -34,15 +36,17 @@ public class LibraryDAO {
                         "LEFT JOIN Review r ON r.gameID = g.gameID " +
                         "WHERE l.userID = ? " +
                         "GROUP BY g.gameID, g.gameName, g.gamePrice, g.version, " +
-                        "         g.gameSize, g.imagePath, p.publisherName";
+                        "         g.gameSize, g.imagePath, p.publisherName, " +
+                        "         l.playTime, l.favorite";
 
-        List<Game> games = new ArrayList<>();
+        List<Game> out = new ArrayList<>();
         try (PreparedStatement ps = DBConnection.get().prepareStatement(sql)) {
             ps.setString(1, username);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    games.add(new Game(
-                            rs.getInt("gameID"),
+                    int id = rs.getInt("gameID");
+                    Game g = new Game(
+                            id,
                             rs.getString("gameName"),
                             rs.getDouble("gamePrice"),
                             rs.getString("version"),
@@ -50,12 +54,15 @@ public class LibraryDAO {
                             rs.getString("publisherName"),
                             rs.getDouble("avgRating"),
                             rs.getString("imagePath"),
-                            genresByGame.getOrDefault(rs.getInt("gameID"), List.of())
-                    ));
+                            genresByGame.getOrDefault(id, List.of())
+                    );
+                    g.setPlayTime(rs.getInt("playTime"));
+                    g.setFavorite(rs.getInt("favorite") == 1);
+                    out.add(g);
                 }
             }
         }
-        return games;
+        return out;
     }
 
 
@@ -78,6 +85,55 @@ public class LibraryDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
             }
+        }
+    }
+    /** Toggle the favorite flag for a game in the user's library. */
+    public static void setFavorite(String username, int gameID, boolean favorite)
+            throws SQLException {
+        String sql = "UPDATE Library SET favorite = ? " +
+                "WHERE userID = ? AND gameID = ?";
+        try (PreparedStatement ps = DBConnection.get().prepareStatement(sql)) {
+            ps.setInt(1, favorite ? 1 : 0);
+            ps.setString(2, username);
+            ps.setInt(3, gameID);
+            ps.executeUpdate();
+        }
+    }
+
+    /* Read the current favorite flag. */
+    public static boolean isFavorite(String username, int gameID) throws SQLException {
+        String sql = "SELECT favorite FROM Library WHERE userID = ? AND gameID = ?";
+        try (PreparedStatement ps = DBConnection.get().prepareStatement(sql)) {
+            ps.setString(1, username);
+            ps.setInt(2, gameID);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() && rs.getInt("favorite") == 1;
+            }
+        }
+    }
+
+    /** Read the current playtime in minutes. Returns 0 if not in library.**/
+     public static int getPlayTime(String username, int gameID) throws SQLException {
+     String sql = "SELECT playTime FROM Library WHERE userID = ? AND gameID = ?";
+     try (PreparedStatement ps = DBConnection.get().prepareStatement(sql)) {
+     ps.setString(1, username);
+     ps.setInt(2, gameID);
+     try (ResultSet rs = ps.executeQuery()) {
+     return rs.next() ? rs.getInt("playTime") : 0;
+     }
+     }
+     }
+
+     /** Increment playtime by N minutes. Used by the "Simulate Playing" button. **/
+    public static void incrementPlayTime(String username, int gameID, int minutes)
+            throws SQLException {
+        String sql = "UPDATE Library SET playTime = playTime + ? " +
+                "WHERE userID = ? AND gameID = ?";
+        try (PreparedStatement ps = DBConnection.get().prepareStatement(sql)) {
+            ps.setInt(1, minutes);
+            ps.setString(2, username);
+            ps.setInt(3, gameID);
+            ps.executeUpdate();
         }
     }
 

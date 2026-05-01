@@ -77,7 +77,9 @@ public class LibraryPanel extends JPanel {
                 showEmptyState();
             } else {
                 for (Game g : games) {
-                    grid.add(new GameCard(g, this::handleClick));
+                    grid.add(new GameCard(g, this::handleClick,
+                            true,                       // show favorite star
+                            this::handleFavoriteToggle));
                 }
             }
         } catch (Exception ex) {
@@ -87,6 +89,18 @@ public class LibraryPanel extends JPanel {
         }
         grid.revalidate();
         grid.repaint();
+    }
+    private void handleFavoriteToggle(int gameID, boolean nowFavorite) {
+        try {
+            LibraryDAO.setFavorite(DBConnection.getAppUsername(), gameID, nowFavorite);
+            // No reload needed — the in-memory Game object was already updated
+            // and the star repainted itself. The DB is now consistent.
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Could not update favorite: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            reload();   // bail-out: re-fetch to recover from the inconsistency
+        }
     }
 
     private void showEmptyState() {

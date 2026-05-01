@@ -21,6 +21,9 @@ import java.util.List;
 
 public class GameDetailDialog extends JDialog {
 
+    private boolean ownsGame = false;
+    private int currentPlayTime = 0;
+
     private static final int DIALOG_W = 800;
     private static final int DIALOG_H = 860;
     private static final int HERO_W   = 760;
@@ -37,6 +40,17 @@ public class GameDetailDialog extends JDialog {
         super(owner, game.getGameName(), ModalityType.APPLICATION_MODAL);
         this.game = game;
         this.onChange = onChange;
+        // Fetch Library-context info once so the body and actions stay in sync.
+        try {
+            String me = DBConnection.getAppUsername();
+            this.ownsGame = LibraryDAO.owns(me, game.getGameID());
+            if (ownsGame) {
+                this.currentPlayTime = LibraryDAO.getPlayTime(me, game.getGameID());
+            }
+        } catch (SQLException ignored) {
+            // Leave defaults; later DB calls will surface any real problem.
+        }
+
 
         setSize(DIALOG_W, DIALOG_H);
         setLocationRelativeTo(owner);
@@ -156,9 +170,17 @@ public class GameDetailDialog extends JDialog {
         stats.add(buildStat("Version",
                 game.getVersion() == null ? "—" : game.getVersion(),
                 GameForgeTheme.TEXT_BRIGHT, false));
-        stats.add(buildStat("Size",
-                game.getGameSize() + " MB",
-                GameForgeTheme.TEXT_BRIGHT, false));
+
+        if (ownsGame) {
+            stats.add(buildStat("Your playtime",
+                    formatPlayTime(currentPlayTime),
+                    new Color(0x86b418),     // money green — same as "owned" tag
+                    false));
+        } else {
+            stats.add(buildStat("Size",
+                    game.getGameSize() + " MB",
+                    GameForgeTheme.TEXT_BRIGHT, false));
+        }
         return stats;
     }
 
@@ -302,6 +324,15 @@ public class GameDetailDialog extends JDialog {
         return "<html><div style='width:" + REVIEW_TEXT_WIDTH + "px;'>"
                 + escaped + "</div></html>";
     }
+    /** Format minutes as a human-readable "Xh Ym" string. */
+    private static String formatPlayTime(int minutes) {
+        if (minutes <= 0) return "Not played yet";
+        int hours = minutes / 60;
+        int mins  = minutes % 60;
+        if (hours == 0) return mins + " min";
+        if (mins  == 0) return hours + " h";
+        return hours + " h " + mins + " min";
+    }
 
     // ============================================================== //
     //  ACTIONS                                                        //
@@ -314,14 +345,17 @@ public class GameDetailDialog extends JDialog {
 
         try {
             String me = DBConnection.getAppUsername();
-            boolean owns       = LibraryDAO.owns(me, game.getGameID());
+
             boolean wishlisted = WishlistDAO.contains(me, game.getGameID());
 
-            if (owns) {
+            if (ownsGame) {
                 JLabel ownedTag = new JLabel("✓  In your library");
                 ownedTag.setFont(GameForgeTheme.BODY);
                 ownedTag.setForeground(new Color(0x86b418));
                 bar.add(ownedTag);
+
+                bar.add(styled("Simulate Playing (+30m)", GameForgeTheme.BTN_GREEN,
+                        Color.WHITE, e -> doSimulatePlaying()));
 
                 if (!ReviewDAO.hasReviewed(me, game.getGameID())) {
                     bar.add(styled("Write a review", GameForgeTheme.ACCENT,
@@ -349,6 +383,32 @@ public class GameDetailDialog extends JDialog {
             bar.add(err);
         }
         return bar;
+    }
+
+    private void doSimulatePlaying() {
+        try {
+            String me = DBConnection.getAppUsername();
+            LibraryDAO.incrementPlayTime(me, game.getGameID(), 30);
+            currentPlayTime += 30;
+
+            // Notify caller (Library panel) so its cards stay in sync if needed.
+            // We don't dispose the dialog because the user might want to click
+            // the button multiple times.
+            fireChange();
+
+            // Just rebuild the body in-place to show the new playtime.
+            // Cleaner than disposing+reopening, no flicker.
+            getContentPane().removeAll();
+            getContentPane().add(buildHero(),    BorderLayout.NORTH);
+            getContentPane().add(buildBody(),    BorderLayout.CENTER);
+            getContentPane().add(buildActions(), BorderLayout.SOUTH);
+            revalidate();
+            repaint();
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Could not update playtime: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     // ============================================================== //
