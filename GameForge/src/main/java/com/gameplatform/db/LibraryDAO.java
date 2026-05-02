@@ -65,6 +65,67 @@ public class LibraryDAO {
         return out;
     }
 
+    /**
+     * Library stats for the profile-style header on the Library tab.
+     * Computed in one round-trip:
+     *   - gamesOwned    : COUNT(*) from Library
+     *   - favoritesCount: COUNT(*) where favorite = 1
+     *   - totalPlayTime : SUM(playTime), in minutes (0 if user has no games)
+     *   - topGenre      : the genre that appears most often across the user's
+     *                     library, or null if user has no games or no genres
+     */
+    public static LibraryStats getStats(String username) throws SQLException {
+        LibraryStats stats = new LibraryStats();
+
+        // Counts and sums in one query
+        String aggSql =
+                "SELECT " +
+                        "  COUNT(*)                            AS owned, " +
+                        "  SUM(CASE WHEN favorite = 1 THEN 1 ELSE 0 END) AS favs, " +
+                        "  COALESCE(SUM(playTime), 0)          AS total_minutes " +
+                        "FROM Library WHERE userID = ?";
+
+        try (PreparedStatement ps = DBConnection.get().prepareStatement(aggSql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    stats.gamesOwned     = rs.getInt("owned");
+                    stats.favoritesCount = rs.getInt("favs");
+                    stats.totalPlayTime  = rs.getInt("total_minutes");
+                }
+            }
+        }
+
+        // Top genre — separate query because it joins three tables
+        String genreSql =
+                "SELECT TOP 1 gen.genreName, COUNT(*) AS n " +
+                        "FROM Library l " +
+                        "JOIN Game_Genre gg ON gg.gameID = l.gameID " +
+                        "JOIN Genre gen ON gen.genreID = gg.genreID " +
+                        "WHERE l.userID = ? " +
+                        "GROUP BY gen.genreName " +
+                        "ORDER BY n DESC, gen.genreName";
+
+        try (PreparedStatement ps = DBConnection.get().prepareStatement(genreSql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    stats.topGenre = rs.getString("genreName");
+                }
+            }
+        }
+
+        return stats;
+    }
+
+    /** Simple holder for the four library stats. */
+    public static class LibraryStats {
+        public int gamesOwned;
+        public int favoritesCount;
+        public int totalPlayTime;       // in minutes
+        public String topGenre;         // null if no genre data
+    }
+
 
     /** Remove a game from the customer's library. */
     public static void remove(String username, int gameID) throws SQLException {

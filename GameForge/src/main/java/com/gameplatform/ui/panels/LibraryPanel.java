@@ -15,15 +15,25 @@ import java.util.List;
 public class LibraryPanel extends JPanel {
 
     private final JPanel grid = new JPanel(new WrapLayout(FlowLayout.LEFT, 16, 16));
+    private LibraryStatsPanel statsPanel = new LibraryStatsPanel();
 
     public LibraryPanel() {
         setLayout(new BorderLayout());
         setBackground(GameForgeTheme.BG_DARK);
 
-        add(buildHeader(), BorderLayout.NORTH);
+        add(buildTop(), BorderLayout.NORTH);
         add(buildGridScroller(), BorderLayout.CENTER);
 
         reload();
+    }
+
+    private JComponent buildTop() {
+        JPanel top = new JPanel();
+        top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
+        top.setOpaque(false);
+        top.add(statsPanel);
+        top.add(buildHeader());
+        return top;
     }
 
     private JPanel buildHeader() {
@@ -78,9 +88,9 @@ public class LibraryPanel extends JPanel {
             } else {
                 for (Game g : games) {
                     grid.add(new GameCard(g, this::handleClick,
-                            true,                          // show favorite star
+                            true,
                             this::handleFavoriteToggle,
-                            this::handlePlay));            // ← play button
+                            this::handlePlay));
                 }
             }
         } catch (Exception ex) {
@@ -88,6 +98,9 @@ public class LibraryPanel extends JPanel {
                     "Could not load library: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
+
+        refreshStats();
+
         grid.revalidate();
         grid.repaint();
     }
@@ -95,10 +108,7 @@ public class LibraryPanel extends JPanel {
     private void handlePlay(int gameID) {
         try {
             LibraryDAO.incrementPlayTime(DBConnection.getAppUsername(), gameID, 30);
-            // Don't reload the whole grid — we just want to confirm the action happened.
-            // The detail dialog (when opened later) will show the new playtime.
-            // If you'd like a visible confirmation, swap the comment below back in.
-            // JOptionPane.showMessageDialog(this, "+30 minutes added to your playtime!");
+            reload();   // ← refresh stats so total playtime ticks up
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                     "Could not update playtime: " + ex.getMessage(),
@@ -109,14 +119,30 @@ public class LibraryPanel extends JPanel {
     private void handleFavoriteToggle(int gameID, boolean nowFavorite) {
         try {
             LibraryDAO.setFavorite(DBConnection.getAppUsername(), gameID, nowFavorite);
-            // No reload needed — the in-memory Game object was already updated
-            // and the star repainted itself. The DB is now consistent.
+            // Star already repainted itself; just refresh the stats tile.
+            refreshStats();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                     "Could not update favorite: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
-            reload();   // bail-out: re-fetch to recover from the inconsistency
+            reload();
         }
+    }
+
+    /** Stats-only refresh — doesn't touch the card grid. */
+    private void refreshStats() {
+        Container parent = statsPanel.getParent();
+        if (parent == null) return;
+        int index = -1;
+        for (int i = 0; i < parent.getComponentCount(); i++) {
+            if (parent.getComponent(i) == statsPanel) { index = i; break; }
+        }
+        if (index < 0) return;
+        parent.remove(index);
+        statsPanel = new LibraryStatsPanel();
+        parent.add(statsPanel, index);
+        parent.revalidate();
+        parent.repaint();
     }
 
     private void showEmptyState() {
