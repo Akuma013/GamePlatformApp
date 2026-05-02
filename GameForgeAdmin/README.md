@@ -9,7 +9,7 @@ built with Java Swing + Microsoft JDBC.
 
 - Java 17+
 - Maven 3.6+  (or open as a Maven project in IntelliJ / Eclipse)
-- SQL Server running on `DESKTOP-7OVINNS\SQLEXPRESS`
+- SQL Server running on `localhost\SQLEXPRESS`
 - `GamePlatformDB` database with all logins already created
 
 ---
@@ -34,7 +34,7 @@ Edit `DBConnection.java` if your SQL Server instance name differs:
 
 ```java
 private static final String BASE_URL =
-    "jdbc:sqlserver://DESKTOP-7OVINNS\\SQLEXPRESS;databaseName=GamePlatformDB;encrypt=false";
+    "jdbc:sqlserver://localhost\\SQLEXPRESS;databaseName=GamePlatformDB;encrypt=false";
 ```
 
 ---
