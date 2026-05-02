@@ -78,8 +78,9 @@ public class LibraryPanel extends JPanel {
             } else {
                 for (Game g : games) {
                     grid.add(new GameCard(g, this::handleClick,
-                            true,                       // show favorite star
-                            this::handleFavoriteToggle));
+                            true,                          // show favorite star
+                            this::handleFavoriteToggle,
+                            this::handlePlay));            // ← play button
                 }
             }
         } catch (Exception ex) {
@@ -90,6 +91,21 @@ public class LibraryPanel extends JPanel {
         grid.revalidate();
         grid.repaint();
     }
+
+    private void handlePlay(int gameID) {
+        try {
+            LibraryDAO.incrementPlayTime(DBConnection.getAppUsername(), gameID, 30);
+            // Don't reload the whole grid — we just want to confirm the action happened.
+            // The detail dialog (when opened later) will show the new playtime.
+            // If you'd like a visible confirmation, swap the comment below back in.
+            // JOptionPane.showMessageDialog(this, "+30 minutes added to your playtime!");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Could not update playtime: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     private void handleFavoriteToggle(int gameID, boolean nowFavorite) {
         try {
             LibraryDAO.setFavorite(DBConnection.getAppUsername(), gameID, nowFavorite);

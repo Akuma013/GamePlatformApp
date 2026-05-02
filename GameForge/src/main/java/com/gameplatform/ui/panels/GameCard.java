@@ -22,13 +22,19 @@ public class GameCard extends JPanel {
     private static final int IMG_H  = 107;     // ≈ Steam capsule aspect
 
     public GameCard(Game game, Consumer<Integer> onClick) {
-        this(game, onClick, false, null);
-
+        this(game, onClick, false, null, null);
     }
 
     public GameCard(Game game, Consumer<Integer> onClick,
                     boolean showFavoriteStar,
                     java.util.function.BiConsumer<Integer, Boolean> onFavoriteToggle) {
+        this(game, onClick, showFavoriteStar, onFavoriteToggle, null);
+    }
+
+    public GameCard(Game game, Consumer<Integer> onClick,
+                    boolean showFavoriteStar,
+                    java.util.function.BiConsumer<Integer, Boolean> onFavoriteToggle,
+                    Consumer<Integer> onPlay){
         setLayout(new BorderLayout());
         setBackground(GameForgeTheme.BG_CARD);
         setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
@@ -93,7 +99,20 @@ public class GameCard extends JPanel {
         text.add(Box.createVerticalStrut(6));
         text.add(buildPrimaryGenreChip(game));
         text.add(Box.createVerticalStrut(6));
-        text.add(price);
+
+        if (onPlay != null) {
+            // Library context: show price + Play button on one row
+            JPanel priceRow = new JPanel(new BorderLayout());
+            priceRow.setOpaque(false);
+            priceRow.setAlignmentX(LEFT_ALIGNMENT);
+            priceRow.add(price, BorderLayout.WEST);
+            priceRow.add(buildPlayButton(game, onPlay), BorderLayout.EAST);
+            text.add(priceRow);
+        } else {
+            // Default: price alone
+            text.add(price);
+        }
+
         add(text, BorderLayout.CENTER);
 
         // ---- hover and click ----
@@ -108,6 +127,41 @@ public class GameCard extends JPanel {
                 if (onClick != null) onClick.accept(game.getGameID());
             }
         });
+    }
+
+    private static JButton buildPlayButton(Game game, Consumer<Integer> onPlay) {
+        JButton btn = new JButton("Play") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                Color bg = getModel().isRollover()
+                        ? new Color(0x86b418)        // brighter green on hover
+                        : GameForgeTheme.BTN_GREEN;  // standard green
+                g2.setColor(bg);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btn.setForeground(Color.WHITE);
+        btn.setMargin(new Insets(0, 0, 0, 0));
+        btn.setFocusPainted(false);
+        btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setPreferredSize(new Dimension(70, 26));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                onPlay.accept(game.getGameID());
+                e.consume();   // don't propagate to the card's open-detail click
+            }
+        });
+        return btn;
     }
 
     private static JLabel buildFavoriteStar(Game game,
